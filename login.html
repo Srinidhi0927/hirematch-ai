@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Analyzer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-card" id="loginCard">
+            <!-- Glow reflection overlay -->
+            <div class="card-glow-overlay" id="glowOverlay"></div>
+            
+            <h1 class="main-title">AI Resume Analyzer</h1>
+
+            <div class="form-container">
+                <form id="loginForm" onsubmit="event.preventDefault(); submitAuthForm();">
+                    <div class="input-group">
+                        <label for="username">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2BE25F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            Username
+                        </label>
+                        <input type="text" id="username" placeholder="Enter your username" required autocomplete="off">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="password">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2BE25F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            Password
+                        </label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" placeholder="Enter your password" required>
+                            <button type="button" class="eye-btn" id="togglePassword">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" id="eyeIcon"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="primary-btn" id="submitBtn">Log In</button>
+                </form>
+            </div>
+
+            <div class="toggle-text" id="toggleText">
+                <span class="dot">••</span> Don't have an account? <span class="dot">••</span>
+            </div>
+
+            <button type="button" class="secondary-btn" id="toggleBtn" onclick="toggleAuthMode()">Create account</button>
+        </div>
+    </div>
+
+    <script src="script.js?v=2"></script>
+</body>
+</html>

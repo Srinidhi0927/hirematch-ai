@@ -6,3 +6,4 @@ scikit-learn
 pdfminer.six
 python-docx
 groq
+python-multipart

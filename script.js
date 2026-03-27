@@ -36,7 +36,7 @@ window.submitAuthForm = async function() {
     submitBtn.innerText = "Connecting...";
     submitBtn.disabled = true;
     // Define dynamic endpoint
-    const endpoint = isLoginMode ? "http://127.0.0.1:8000/login" : "http://127.0.0.1:8000/signup";
+    const endpoint = isLoginMode ? "https://hirematch-ai-backend.onrender.com/login" : "https://hirematch-ai-backend.onrender.com/signup";
     
     const payload = isLoginMode 
         ? { username: username, password: passwordInput.value }
@@ -175,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
             formData.append("resume", fileInput.files[0]);
             formData.append("job_desc", jobDescInput.value.trim());
             try {
-                const response = await fetch("http://127.0.0.1:8000/analyze", {
+                const response = await fetch("https://hirematch-ai-backend.onrender.com/analyze", {
                     method: "POST",
                     body: formData
                 });

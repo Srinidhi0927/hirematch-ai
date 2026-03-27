@@ -36,7 +36,6 @@ def _load_env_key(key_name: str) -> str | None:
 # Match Streamlit pattern: try plain load_dotenv first, then manual parse as fallback
 load_dotenv("config.env")
 api_key = os.getenv("GROQ_API_KEY") or _load_env_key("GROQ_API_KEY")
-print("Loaded API Key:", api_key)
 ats_model = None
 def get_model():
     global ats_model

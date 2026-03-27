@@ -40,7 +40,7 @@ ats_model = None
 def get_model():
     global ats_model
     if ats_model is None:
-        ats_model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
+        ats_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
     return ats_model
 # ---------- Helper Functions ----------
 def extract_file_text(file_bytes: bytes, filename: str) -> str:

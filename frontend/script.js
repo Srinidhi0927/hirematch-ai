@@ -5,7 +5,7 @@ let isLoginMode = true;
 // Basic Session Guard
 if (window.location.pathname.includes("dashboard.html")) {
     if (localStorage.getItem("isLoggedIn") !== "true") {
-        window.location.href = "login.html";
+        window.location.href = "index.html";
     }
 }
 window.toggleAuthMode = function() {
@@ -93,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
             e.preventDefault();
             localStorage.removeItem("isLoggedIn");
             localStorage.removeItem("username");
-            window.location.href = "login.html";
+            window.location.href = "index.html";
         });
     }
     // -----------------------------------------------------

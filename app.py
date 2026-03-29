@@ -1,97 +1,51 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from pydantic import BaseModel
-import sqlite3
-import hashlib
-from analyzer import analyze_resume # Importing the backend module we created earlier
-
+from analyzer import analyze_resume # Importing the backend module
+from auth import init_db, create_user, verify_user # Moved database logic to auth.py
 # -------- INIT APP --------
 app = FastAPI()
-
 # -------- CORS (VERY IMPORTANT) --------
 from fastapi.middleware.cors import CORSMiddleware
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=False, # Fixed illegal overlap natively
+    allow_credentials=True, 
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-DB_FILE = "users.db"
-
-
-# -------- DATABASE --------
-def init_db():
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            username TEXT PRIMARY KEY,
-            email TEXT NOT NULL,
-            password TEXT NOT NULL
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-init_db()
-
-
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-
-def create_user(username, email, password):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    try:
-        c.execute("INSERT INTO users VALUES (?, ?, ?)",
-                  (username, email, hash_password(password)))
-        conn.commit()
-        return True
-    except sqlite3.IntegrityError:
-        return False
-    finally:
-        conn.close()
-
-
-def verify_user(username, password):
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute("SELECT password FROM users WHERE username=?", (username,))
-    result = c.fetchone()
-    conn.close()
-    return result and result[0] == hash_password(password)
-
-
+# -------- DATABASE STARTUP --------
+@app.on_event("startup")
+def startup():
+    """
+    Called on FastAPI startup to ensure the users table is correctly initialized
+    in whichever database auth.py is configured to use (PostgreSQL/SQLite).
+    """
+    init_db()
 # -------- REQUEST MODELS --------
 class LoginRequest(BaseModel):
     username: str
     password: str
-
-
 class SignupRequest(BaseModel):
     username: str
     email: str
     password: str
-
-
 # -------- ROUTES --------
 @app.post("/login")
 def login(data: LoginRequest):
+    """
+    Passes authentication logic to auth.py verify_user utility.
+    """
     if verify_user(data.username, data.password):
         return {"status": "success"}
     return {"status": "error", "message": "Invalid credentials"}
-
-
 @app.post("/signup")
 def signup(data: SignupRequest):
+    """
+    Passes user creation logic to auth.py create_user utility.
+    """
     if create_user(data.username, data.email, data.password):
         return {"status": "success"}
     return {"status": "error", "message": "User already exists"}
-
-
 # -------- ANALYZER ROUTE --------
 @app.post("/analyze")
 async def analyze_endpoint(
@@ -99,7 +53,7 @@ async def analyze_endpoint(
     job_desc: str = Form(...)
 ):
     """
-    Endpoint to receive a resume PDF file and a job description string,
+    Endpoint to receive a resume PDF/DOCX file and a job description string,
     then run them through the AI Resume Analyzer backend pipeline.
     """
     if not resume.filename.endswith((".pdf", ".txt", ".docx")):
@@ -121,7 +75,6 @@ async def analyze_endpoint(
     except Exception as e:
         # Return generic processing error alongside what failed
         raise HTTPException(status_code=500, detail=f"Server Analysis Error: {str(e)}")
-
 # -------- START SERVER NATIVELY --------
 if __name__ == "__main__":
     import uvicorn

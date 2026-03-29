@@ -2,6 +2,9 @@
 // GLOBAL AUTH STATE & SESSION CHECK
 // -----------------------------------------------------
 let isLoginMode = true;
+const BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://127.0.0.1:8000"
+    : "https://hirematch-ai-backend.onrender.com";
 // Basic Session Guard
 if (window.location.pathname.includes("dashboard.html")) {
     if (localStorage.getItem("isLoggedIn") !== "true") {
@@ -36,7 +39,9 @@ window.submitAuthForm = async function() {
     submitBtn.innerText = "Connecting...";
     submitBtn.disabled = true;
     // Define dynamic endpoint
-    const endpoint = isLoginMode ? "https://hirematch-ai-backend.onrender.com/login" : "https://hirematch-ai-backend.onrender.com/signup";
+    const endpoint = isLoginMode 
+        ? `${BASE_URL}/login`
+        : `${BASE_URL}/signup`;
     
     const payload = isLoginMode 
         ? { username: username, password: passwordInput.value }
@@ -175,7 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
             formData.append("resume", fileInput.files[0]);
             formData.append("job_desc", jobDescInput.value.trim());
             try {
-                const response = await fetch("https://hirematch-ai-backend.onrender.com/analyze", {
+                const response = await fetch(`${BASE_URL}/analyze`, {
                     method: "POST",
                     body: formData
                 });

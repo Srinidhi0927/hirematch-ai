@@ -78,5 +78,6 @@ async def analyze_endpoint(
 # -------- START SERVER NATIVELY --------
 if __name__ == "__main__":
     import uvicorn
-    # Allows you to just click the "Play" button in VSCode to start the FastAPI server!
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("app:app", host="0.0.0.0", port=port)

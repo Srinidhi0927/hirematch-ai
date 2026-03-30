@@ -1,9 +1,11 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from pydantic import BaseModel
-from analyzer import analyze_resume # Importing the backend module
 from auth import init_db, create_user, verify_user # Moved database logic to auth.py
 # -------- INIT APP --------
 app = FastAPI()
+@app.get("/")
+def health():
+    return {"status": "running"}
 # -------- CORS (VERY IMPORTANT) --------
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
@@ -57,9 +59,10 @@ async def analyze_endpoint(
     job_desc: str = Form(...)
 ):
     """
-    Endpoint to receive a resume PDF/DOCX file and a job description string,
-    then run them through the AI Resume Analyzer backend pipeline.
+    Endpoint logic to analyze resume against job description.
     """
+    from analyzer import analyze_resume
+    
     if not resume.filename.endswith((".pdf", ".txt", ".docx")):
         raise HTTPException(status_code=400, detail="Invalid file format. Only PDF, TXT, and DOCX are supported.")
         

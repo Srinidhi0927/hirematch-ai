@@ -25,7 +25,6 @@ def startup():
         print("Database initialized successfully")
     except Exception as e:
         print("Database init failed:", str(e))
-    init_db()
 # -------- REQUEST MODELS --------
 class LoginRequest(BaseModel):
     username: str

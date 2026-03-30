@@ -20,6 +20,11 @@ def startup():
     Called on FastAPI startup to ensure the users table is correctly initialized
     in whichever database auth.py is configured to use (PostgreSQL/SQLite).
     """
+    try:
+        init_db()
+        print("Database initialized successfully")
+    except Exception as e:
+        print("Database init failed:", str(e))
     init_db()
 # -------- REQUEST MODELS --------
 class LoginRequest(BaseModel):

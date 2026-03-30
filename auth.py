@@ -2,10 +2,10 @@ import psycopg2
 import os
 import hashlib
 def get_conn():
-    return psycopg2.connect(
-        os.getenv("DATABASE_URL"),
-        sslmode="require"
-    )
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        raise ValueError("DATABASE_URL not set in environment variables")
+    return psycopg2.connect(db_url, sslmode="require")
 def init_db():
     """
     Initializes the PostgreSQL 'users' table if it doesn't already exist.

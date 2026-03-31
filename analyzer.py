@@ -52,7 +52,10 @@ ats_model = None
 def get_model():
     global ats_model
     if ats_model is None:
-        ats_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+        ats_model = SentenceTransformer(
+            "sentence-transformers/all-MiniLM-L6-v2",
+            device="cpu"
+        )
     return ats_model
 # ---------- Helper Functions ----------
 def extract_file_text(file_bytes: bytes, filename: str) -> str:
@@ -76,10 +79,18 @@ def extract_file_text(file_bytes: bytes, filename: str) -> str:
         raise ValueError(f"Error extracting text from {ext.upper()}: {str(e)}")
 def calculate_similarity_bert(text1: str, text2: str) -> float:
     """Calculates cosine similarity between two texts using SentenceTransformers."""
+    # Trim text before encoding to speed up processing
+    text1 = text1[:3000]
+    text2 = text2[:2000]
+    
     model = get_model()
-    bindings1 = model.encode([text1])
-    bindings2 = model.encode([text2])
-    similarity = cosine_similarity(bindings1, bindings2)[0][0]
+    
+    # Batch encode instead of double encode to optimize performance
+    embeddings = model.encode([text1, text2])
+    similarity = cosine_similarity(
+        [embeddings[0]],
+        [embeddings[1]]
+    )[0][0]
     return float(similarity)
 def get_report(resume: str, job_desc: str) -> str:
     """Generates an AI evaluation report using Groq."""

@@ -4,15 +4,14 @@ import os
 from typing import Dict, Any
 from pathlib import Path
 
-# Set HuggingFace cache directory for Render persistence
-os.environ["HF_HOME"] = "/tmp/huggingface"
 # Text Extractors
 from pdfminer.high_level import extract_text
 import docx  # Requires: pip install python-docx
-from sentence_transformers import SentenceTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from groq import Groq
 from dotenv import load_dotenv
+
 # Load environment variables — try multiple locations for robustness
 def _load_env_key(key_name: str) -> str | None:
     """Read a key from .env file robustly — handles BOM, quotes, and Windows line endings."""
@@ -36,6 +35,7 @@ def _load_env_key(key_name: str) -> str | None:
                             return v
     # Final fallback: system environment variable
     return (os.environ.get(key_name) or "").strip() or None
+
 # Match Streamlit pattern: try plain load_dotenv first, then manual parse as fallback
 load_dotenv("config.env")
 api_key = os.getenv("GROQ_API_KEY") or _load_env_key("GROQ_API_KEY")
@@ -48,15 +48,7 @@ def get_groq_client():
     if groq_client is None:
         groq_client = Groq(api_key=api_key, timeout=10)
     return groq_client
-ats_model = None
-def get_model():
-    global ats_model
-    if ats_model is None:
-        ats_model = SentenceTransformer(
-            "sentence-transformers/all-MiniLM-L6-v2",
-            device="cpu"
-        )
-    return ats_model
+
 # ---------- Helper Functions ----------
 def extract_file_text(file_bytes: bytes, filename: str) -> str:
     """Extracts text from PDF, DOCX, or TXT files provided as bytes."""
@@ -77,25 +69,27 @@ def extract_file_text(file_bytes: bytes, filename: str) -> str:
             raise ValueError(f"Unsupported file extension: .{ext}")
     except Exception as e:
         raise ValueError(f"Error extracting text from {ext.upper()}: {str(e)}")
+
 def calculate_similarity_bert(text1: str, text2: str) -> float:
-    """Calculates cosine similarity between two texts using SentenceTransformers."""
-    # Trim text before encoding to speed up processing
+    """Calculates cosine similarity between two texts using TF-IDF."""
+    # Trim text for performance
     text1 = text1[:3000]
     text2 = text2[:2000]
     
-    model = get_model()
+    vectorizer = TfidfVectorizer(stop_words="english")
+    vectors = vectorizer.fit_transform([text1, text2])
     
-    # Batch encode instead of double encode to optimize performance
-    embeddings = model.encode([text1, text2])
     similarity = cosine_similarity(
-        [embeddings[0]],
-        [embeddings[1]]
+        vectors[0:1],
+        vectors[1:2]
     )[0][0]
+    
     return float(similarity)
+
 def get_report(resume: str, job_desc: str) -> str:
     """Generates an AI evaluation report using Groq."""
     if not api_key:
-        return "⚠️ **AI Engine Offline (Missing GROQ_API_KEY)**\n\nThe AI Assessment module requires an active Groq Developer Key to run deep semantic analytics. Please set your `GROQ_API_KEY` environment variable in the root folder.\n\nThe native ATS Score above was calculated locally using SentenceTransformers and remains fully active!"
+        return "⚠️ **AI Engine Offline**\n\nThe AI Assessment module requires a valid `GROQ_API_KEY`. Please configure your environment variables to enable deep semantic analysis."
     
     client = get_groq_client()
     prompt = f"""
@@ -124,12 +118,14 @@ def get_report(resume: str, job_desc: str) -> str:
         top_p=1,
     )
     return chat_completion.choices[0].message.content
+
 def extract_scores(text: str) -> list[float]:
     """Extracts numerical score matches (X/5) from the text."""
     pattern = r'(\d+(?:\.\d+)?)/5'
     matches = re.findall(pattern, text)
     scores = [float(match) for match in matches]
     return scores
+
 # ---------- Main Analyzer Function ----------
 def analyze_resume(resume_bytes: bytes, filename: str, job_desc: str) -> Dict[str, Any]:
     """

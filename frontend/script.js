@@ -179,12 +179,22 @@ document.addEventListener("DOMContentLoaded", () => {
             const formData = new FormData();
             formData.append("resume", fileInput.files[0]);
             formData.append("job_desc", jobDescInput.value.trim());
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                alert("Backend is waking up. Please wait 10 seconds and click Analyze again.");
+                controller.abort();
+            }, 10000);
+
             try {
                 const response = await fetch(`${BASE_URL}/analyze`, {
                     method: "POST",
-                    body: formData
+                    body: formData,
+                    signal: controller.signal
                 });
                 
+                clearTimeout(timeoutId);
+
                 if (!response.ok) {
                     throw new Error("Backend not reachable");
                 }
@@ -223,8 +233,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     analysisContent.innerText = "AI-generated detailed analysis of the resume will be shown here.";
                 }
             } catch (error) {
+                clearTimeout(timeoutId);
                 console.error("Analysis Error:", error);
-                alert("Backend is waking up. Please wait 10 seconds and click Analyze again.");
+                if (error.name !== "AbortError") {
+                    alert("Backend is waking up. Please wait 10 seconds and click Analyze again.");
+                }
                 if (atsNode) atsNode.innerHTML = `0<span class="percent">%</span>`;
                 if (aiNode) aiNode.innerHTML = `0<span class="percent">/5</span>`;
                 analysisContent.innerText = "AI-generated detailed analysis of the resume will be shown here.";

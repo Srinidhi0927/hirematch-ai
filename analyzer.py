@@ -3,6 +3,9 @@ import re
 import os
 from typing import Dict, Any
 from pathlib import Path
+
+# Set HuggingFace cache directory for Render persistence
+os.environ["HF_HOME"] = "/tmp/huggingface"
 # Text Extractors
 from pdfminer.high_level import extract_text
 import docx  # Requires: pip install python-docx

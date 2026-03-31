@@ -7,7 +7,7 @@ from pathlib import Path
 # Text Extractors
 from pdfminer.high_level import extract_text
 import docx  # Requires: pip install python-docx
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from groq import Groq
 from dotenv import load_dotenv
@@ -49,6 +49,16 @@ def get_groq_client():
         groq_client = Groq(api_key=api_key, timeout=10)
     return groq_client
 
+ats_model = None
+def get_model():
+    global ats_model
+    if ats_model is None:
+        ats_model = SentenceTransformer(
+            "sentence-transformers/paraphrase-MiniLM-L3-v2",
+            device="cpu"
+        )
+    return ats_model
+
 # ---------- Helper Functions ----------
 def extract_file_text(file_bytes: bytes, filename: str) -> str:
     """Extracts text from PDF, DOCX, or TXT files provided as bytes."""
@@ -71,25 +81,25 @@ def extract_file_text(file_bytes: bytes, filename: str) -> str:
         raise ValueError(f"Error extracting text from {ext.upper()}: {str(e)}")
 
 def calculate_similarity_bert(text1: str, text2: str) -> float:
-    """Calculates cosine similarity between two texts using TF-IDF."""
-    # Trim text for performance
+    """Calculates cosine similarity between two texts using SentenceTransformers."""
+    # Trim text before encoding to speed up processing
     text1 = text1[:3000]
     text2 = text2[:2000]
     
-    vectorizer = TfidfVectorizer(stop_words="english")
-    vectors = vectorizer.fit_transform([text1, text2])
+    model = get_model()
     
+    # Batch encode instead of double encode to optimize performance
+    embeddings = model.encode([text1, text2])
     similarity = cosine_similarity(
-        vectors[0:1],
-        vectors[1:2]
+        [embeddings[0]],
+        [embeddings[1]]
     )[0][0]
-    
     return float(similarity)
 
 def get_report(resume: str, job_desc: str) -> str:
     """Generates an AI evaluation report using Groq."""
     if not api_key:
-        return "⚠️ **AI Engine Offline**\n\nThe AI Assessment module requires a valid `GROQ_API_KEY`. Please configure your environment variables to enable deep semantic analysis."
+        return "⚠️ **AI Engine Offline (Missing GROQ_API_KEY)**\n\nThe AI Assessment module requires an active Groq Developer Key to run deep semantic analytics. Please set your `GROQ_API_KEY` environment variable in the root folder.\n\nThe native ATS Score above was calculated locally using SentenceTransformers and remains fully active!"
     
     client = get_groq_client()
     prompt = f"""

@@ -2,9 +2,7 @@
 // GLOBAL AUTH STATE & SESSION CHECK
 // -----------------------------------------------------
 let isLoginMode = true;
-const BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://127.0.0.1:8000"
-    : "https://hirematch-ai-backend.onrender.com";
+const BASE_URL = "https://hirematch-ai-backend.onrender.com";
 // Basic Session Guard
 if (window.location.pathname.includes("dashboard.html")) {
     if (localStorage.getItem("isLoggedIn") !== "true") {
@@ -67,7 +65,6 @@ window.submitAuthForm = async function() {
         }
     } catch (error) {
         console.error("API Error:", error);
-        alert("Server connection failed. Backend may be waking up. Please retry.");
         submitBtn.innerText = originalText;
         submitBtn.disabled = false;
     }
@@ -170,7 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const atsNode = document.getElementById("atsScore");
             const aiNode = document.getElementById("aiScore");
             const originalBtnText = analyzeBtn.innerText;
-            analyzeBtn.innerText = "Connecting to AI Engine (first run may take 15–20s)...";
+            analyzeBtn.innerText = "Connecting...";
             analyzeBtn.disabled = true;
             
             if (atsNode) atsNode.innerHTML = `...<span class="percent">%</span>`;
@@ -179,22 +176,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const formData = new FormData();
             formData.append("resume", fileInput.files[0]);
             formData.append("job_desc", jobDescInput.value.trim());
-
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => {
-                alert("Backend is waking up. Please wait 10 seconds and click Analyze again.");
-                controller.abort();
-            }, 10000);
-
             try {
                 const response = await fetch(`${BASE_URL}/analyze`, {
                     method: "POST",
-                    body: formData,
-                    signal: controller.signal
+                    body: formData
                 });
                 
-                clearTimeout(timeoutId);
-
                 if (!response.ok) {
                     throw new Error("Backend not reachable");
                 }
@@ -233,11 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     analysisContent.innerText = "AI-generated detailed analysis of the resume will be shown here.";
                 }
             } catch (error) {
-                clearTimeout(timeoutId);
                 console.error("Analysis Error:", error);
-                if (error.name !== "AbortError") {
-                    alert("Backend is waking up. Please wait 10 seconds and click Analyze again.");
-                }
                 if (atsNode) atsNode.innerHTML = `0<span class="percent">%</span>`;
                 if (aiNode) aiNode.innerHTML = `0<span class="percent">/5</span>`;
                 analysisContent.innerText = "AI-generated detailed analysis of the resume will be shown here.";

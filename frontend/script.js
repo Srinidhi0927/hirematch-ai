@@ -67,7 +67,7 @@ window.submitAuthForm = async function() {
         }
     } catch (error) {
         console.error("API Error:", error);
-        alert("Server connection failed. Is your FastAPI running on port 8000?");
+        alert("Server connection failed. Backend may be waking up. Please retry.");
         submitBtn.innerText = originalText;
         submitBtn.disabled = false;
     }
@@ -170,12 +170,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const atsNode = document.getElementById("atsScore");
             const aiNode = document.getElementById("aiScore");
             const originalBtnText = analyzeBtn.innerText;
-            analyzeBtn.innerText = "Connecting to AI Engine...";
+            analyzeBtn.innerText = "Connecting to AI Engine (first run may take 15–20s)...";
             analyzeBtn.disabled = true;
             
             if (atsNode) atsNode.innerHTML = `...<span class="percent">%</span>`;
             if (aiNode) aiNode.innerHTML = `...<span class="percent">/5</span>`;
-            analysisContent.innerText = "Processing semantic extraction vectors... (This may take roughly 5 to 15 seconds depending on hardware)";
+            analysisContent.innerText = "Analyzing resume... AI engine is processing. This may take 5–15 seconds.";
             const formData = new FormData();
             formData.append("resume", fileInput.files[0]);
             formData.append("job_desc", jobDescInput.value.trim());
@@ -184,6 +184,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     method: "POST",
                     body: formData
                 });
+                
+                if (!response.ok) {
+                    throw new Error("Backend not reachable");
+                }
                 const json = await response.json();
                 if (json.status === "success") {
                     const data = json.data;
@@ -220,7 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             } catch (error) {
                 console.error("Analysis Error:", error);
-                alert("Server Connection Failed! Have you started FastApi on Port 8000?");
+                alert("Backend is waking up. Please wait 10 seconds and click Analyze again.");
                 if (atsNode) atsNode.innerHTML = `0<span class="percent">%</span>`;
                 if (aiNode) aiNode.innerHTML = `0<span class="percent">/5</span>`;
                 analysisContent.innerText = "AI-generated detailed analysis of the resume will be shown here.";

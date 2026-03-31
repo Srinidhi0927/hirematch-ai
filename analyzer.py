@@ -36,6 +36,15 @@ def _load_env_key(key_name: str) -> str | None:
 # Match Streamlit pattern: try plain load_dotenv first, then manual parse as fallback
 load_dotenv("config.env")
 api_key = os.getenv("GROQ_API_KEY") or _load_env_key("GROQ_API_KEY")
+
+# Global Groq Client Cache
+groq_client = None
+
+def get_groq_client():
+    global groq_client
+    if groq_client is None:
+        groq_client = Groq(api_key=api_key, timeout=10)
+    return groq_client
 ats_model = None
 def get_model():
     global ats_model
@@ -73,7 +82,8 @@ def get_report(resume: str, job_desc: str) -> str:
     """Generates an AI evaluation report using Groq."""
     if not api_key:
         return "⚠️ **AI Engine Offline (Missing GROQ_API_KEY)**\n\nThe AI Assessment module requires an active Groq Developer Key to run deep semantic analytics. Please set your `GROQ_API_KEY` environment variable in the root folder.\n\nThe native ATS Score above was calculated locally using SentenceTransformers and remains fully active!"
-    client = Groq(api_key=api_key)
+    
+    client = get_groq_client()
     prompt = f"""
     # Context:
     - You are an AI Resume Analyzer, you will be given Candidate's resume and Job Description of the role he is applying for.

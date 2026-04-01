@@ -167,12 +167,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const atsNode = document.getElementById("atsScore");
             const aiNode = document.getElementById("aiScore");
             const originalBtnText = analyzeBtn.innerText;
-            analyzeBtn.innerText = "Connecting...";
+            analyzeBtn.innerText = "Analyzing (first run may take 40–60s)...";
             analyzeBtn.disabled = true;
             
             if (atsNode) atsNode.innerHTML = `...<span class="percent">%</span>`;
             if (aiNode) aiNode.innerHTML = `...<span class="percent">/5</span>`;
-            analysisContent.innerText = "Analyzing resume... AI engine is processing. This may take 5–15 seconds.";
+            analysisContent.innerText = "Analyzing resume... First run loads AI models and may take up to 60 seconds. Subsequent runs will be much faster.";
             const formData = new FormData();
             formData.append("resume", fileInput.files[0]);
             formData.append("job_desc", jobDescInput.value.trim());

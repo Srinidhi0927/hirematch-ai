@@ -46,7 +46,7 @@ groq_client = None
 def get_groq_client():
     global groq_client
     if groq_client is None:
-        groq_client = Groq(api_key=api_key, timeout=10)
+        groq_client = Groq(api_key=api_key, timeout=60)
     return groq_client
 
 ats_model = None

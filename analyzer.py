@@ -1,14 +1,12 @@
 import io
 import re
 import os
-os.environ["HF_HOME"] = "/tmp/huggingface"
 from typing import Dict, Any
 from pathlib import Path
 
 # Text Extractors
 from pdfminer.high_level import extract_text
 import docx  # Requires: pip install python-docx
-from sklearn.metrics.pairwise import cosine_similarity
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -49,17 +47,6 @@ def get_groq_client():
         groq_client = Groq(api_key=api_key, timeout=60)
     return groq_client
 
-ats_model = None
-def get_model():
-    global ats_model
-    if ats_model is None:
-        from sentence_transformers import SentenceTransformer
-        ats_model = SentenceTransformer(
-            "sentence-transformers/paraphrase-MiniLM-L3-v2",
-            device="cpu"
-        )
-    return ats_model
-
 # ---------- Helper Functions ----------
 def extract_file_text(file_bytes: bytes, filename: str) -> str:
     """Extracts text from PDF, DOCX, or TXT files provided as bytes."""
@@ -81,54 +68,12 @@ def extract_file_text(file_bytes: bytes, filename: str) -> str:
     except Exception as e:
         raise ValueError(f"Error extracting text from {ext.upper()}: {str(e)}")
 
-def calculate_similarity_bert(text1: str, text2: str) -> float:
-    """Calculates cosine similarity between two texts using SentenceTransformers."""
-    # Trim text before encoding to speed up processing
-    text1 = text1[:3000]
-    text2 = text2[:2000]
-    
-    model = get_model()
-    
-    # Batch encode instead of double encode to optimize performance
-    embeddings = model.encode([text1, text2])
-    similarity = cosine_similarity(
-        [embeddings[0]],
-        [embeddings[1]]
-    )[0][0]
-    return float(similarity)
-
-def get_report(resume: str, job_desc: str) -> str:
-    """Generates an AI evaluation report using Groq."""
-    if not api_key:
-        return "⚠️ **AI Engine Offline (Missing GROQ_API_KEY)**\n\nThe AI Assessment module requires an active Groq Developer Key to run deep semantic analytics. Please set your `GROQ_API_KEY` environment variable in the root folder.\n\nThe native ATS Score above was calculated locally using SentenceTransformers and remains fully active!"
-    
-    client = get_groq_client()
-    prompt = f"""
-    # Context:
-    - You are an AI Resume Analyzer, you will be given Candidate's resume and Job Description of the role he is applying for.
-    # Instruction:
-    - Analyze candidate's resume based on the possible points that can be extracted from job description,and give your evaluation on each point with the criteria below:  
-    - Consider all points like required skills, experience,etc that are needed for the job role.
-    - Calculate the score to be given (out of 5) for every point based on evaluation at the beginning of each point with a detailed explanation.  
-    - If the resume aligns with the job description point, mark it with ✅ and provide a detailed explanation.  
-    - If the resume doesn't align with the job description point, mark it with ❌ and provide a reason for it.  
-    - If a clear conclusion cannot be made, use a ⚠️ sign with a reason.  
-    - The Final Heading should be "Suggestions to improve your resume:" and give where and what the candidate can improve to be selected for that job role.
-    # Inputs:
-    Candidate Resume: {resume}
-    ---
-    Job Description: {job_desc}
-    # Output:
-    - Each any every point should be given a score (example: 3/5 ). 
-    - Mention the scores and  relevant emoji at the beginning of each point and then explain the reason.
-    """
-    chat_completion = client.chat.completions.create(
-        messages=[{"role": "user", "content": prompt}],
-        model="llama-3.3-70b-versatile",
-        temperature=0,
-        top_p=1,
-    )
-    return chat_completion.choices[0].message.content
+def extract_ats(text: str) -> float:
+    """Extracts ATS_MATCH score from the Groq response."""
+    match = re.search(r"ATS_MATCH:\s*(\d+)", text)
+    if match:
+        return float(match.group(1)) / 100
+    return 0.0
 
 def extract_scores(text: str) -> list[float]:
     """Extracts numerical score matches (X/5) from the text."""
@@ -136,6 +81,148 @@ def extract_scores(text: str) -> list[float]:
     matches = re.findall(pattern, text)
     scores = [float(match) for match in matches]
     return scores
+
+def get_report(resume: str, job_desc: str) -> str:
+    """Generates an AI evaluation report using Groq."""
+    if not api_key:
+        return "⚠️ **AI Engine Offline (Missing GROQ_API_KEY)**\n\nThe AI Assessment module requires an active Groq Developer Key to run deep semantic analytics. Please set your `GROQ_API_KEY` environment variable in the root folder."
+    
+    client = get_groq_client()
+    prompt = f"""
+You are an expert-level AI Resume Evaluation Engine designed to perform deep semantic 
+analysis across ALL professional domains including engineering, medicine, research, law, 
+finance, design, fashion, academia, and emerging fields.
+
+Your objective is to determine how well the candidate matches the job description using 
+holistic reasoning, not just keyword overlap.
+
+You must analyze dynamically — do NOT limit evaluation to fixed categories.
+
+==================================================
+PRIMARY OBJECTIVE
+==================================================
+
+Evaluate the resume against the job description using:
+
+• semantic understanding
+• transferable skills reasoning
+• implied experience inference
+• role seniority alignment
+• domain expertise depth
+• industry-specific expectations
+• responsibility overlap
+• measurable achievements
+• skill maturity
+• contextual relevance
+• career progression consistency
+• specialization relevance
+• risk factors (missing critical requirements)
+• overqualification detection
+• adaptability potential
+
+==================================================
+ATS SCORE REQUIREMENT (CRITICAL)
+==================================================
+
+At the very top return:
+
+ATS_MATCH: <0-100>
+
+This must be computed using:
+
+• semantic similarity
+• requirement coverage
+• experience relevance
+• skill depth
+• domain alignment
+• transferable competencies
+• seniority match
+• missing critical requirements penalty
+
+This should simulate a REAL ATS system.
+
+==================================================
+ANALYSIS FORMAT
+==================================================
+
+You must:
+
+• Automatically determine evaluation dimensions
+• Create as many sections as needed
+• Score each section out of 5
+• Provide deep reasoning
+
+Use format:
+
+<Dimension Name> — Score: X/5 [emoji]
+Explanation...
+
+Emoji Rules:
+✅ Strong Match
+⚠️ Partial Match
+❌ Missing or Weak
+
+==================================================
+DEEP ANALYSIS REQUIREMENTS
+==================================================
+
+Your reasoning must:
+
+• infer implied skills
+• detect synonyms
+• consider equivalent experience
+• consider domain crossover skills
+• evaluate leadership signals
+• assess impact metrics
+• identify missing requirements
+• detect resume strengths not explicitly requested
+• identify hidden gaps
+
+==================================================
+FINAL SECTION (MANDATORY)
+==================================================
+
+Suggestions to Improve Resume:
+
+Provide:
+• missing skills
+• missing experience
+• formatting improvements
+• stronger keywords
+• role-specific improvements
+• measurable achievement suggestions
+
+==================================================
+INPUTS
+==================================================
+
+Candidate Resume:
+{resume}
+
+--------------------------------------
+
+Job Description:
+{job_desc}
+
+==================================================
+OUTPUT RULES
+==================================================
+
+• Start with ATS_MATCH
+• Use dynamic evaluation sections
+• Be highly analytical
+• Be professional
+• Avoid repetition
+• Work for ANY profession
+• Provide realistic ATS percentage
+"""
+    chat_completion = client.chat.completions.create(
+        messages=[{"role": "user", "content": prompt}],
+        model="llama-3.3-70b-versatile",
+        temperature=0,
+        top_p=1,
+    )
+    return chat_completion.choices[0].message.content
 
 # ---------- Main Analyzer Function ----------
 def analyze_resume(resume_bytes: bytes, filename: str, job_desc: str) -> Dict[str, Any]:
@@ -154,11 +241,11 @@ def analyze_resume(resume_bytes: bytes, filename: str, job_desc: str) -> Dict[st
     # 1. Extract text from the file (handles routing for PDF, DOCX, TXT)
     resume_text = extract_file_text(resume_bytes, filename)
     
-    # 2. Calculate ATS Score
-    ats_score = calculate_similarity_bert(resume_text, job_desc)
-    
-    # 3. Generate Report
+    # 2. Generate Report (includes ATS_MATCH score from Groq)
     report = get_report(resume_text, job_desc)
+    
+    # 3. Extract ATS Score from Groq response
+    ats_score = extract_ats(report)
     
     # 4. Extract AI Scores and calculate average
     report_scores = extract_scores(report)

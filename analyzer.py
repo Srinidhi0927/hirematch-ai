@@ -1,6 +1,7 @@
 import io
 import re
 import os
+os.environ["HF_HOME"] = "/tmp/huggingface"
 from typing import Dict, Any
 from pathlib import Path
 

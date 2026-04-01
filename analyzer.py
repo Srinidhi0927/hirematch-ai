@@ -7,7 +7,6 @@ from pathlib import Path
 # Text Extractors
 from pdfminer.high_level import extract_text
 import docx  # Requires: pip install python-docx
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from groq import Groq
 from dotenv import load_dotenv
@@ -53,6 +52,7 @@ ats_model = None
 def get_model():
     global ats_model
     if ats_model is None:
+        from sentence_transformers import SentenceTransformer
         ats_model = SentenceTransformer(
             "sentence-transformers/paraphrase-MiniLM-L3-v2",
             device="cpu"

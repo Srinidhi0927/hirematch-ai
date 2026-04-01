@@ -69,8 +69,8 @@ def extract_file_text(file_bytes: bytes, filename: str) -> str:
         raise ValueError(f"Error extracting text from {ext.upper()}: {str(e)}")
 
 def extract_ats(text: str) -> float:
-    """Extracts ATS_MATCH score from the Groq response."""
-    match = re.search(r"ATS_MATCH:\s*(\d+)", text)
+    """Extracts ATS_SCORE from the Groq response."""
+    match = re.search(r"ATS_SCORE:\s*(\d+)", text)
     if match:
         return float(match.group(1)) / 100
     return 0.0
@@ -89,132 +89,48 @@ def get_report(resume: str, job_desc: str) -> str:
     
     client = get_groq_client()
     prompt = f"""
-You are an expert-level AI Resume Evaluation Engine designed to perform deep semantic 
-analysis across ALL professional domains including engineering, medicine, research, law, 
-finance, design, fashion, academia, and emerging fields.
+# Context:
+- You are an AI Resume Analyzer, you will be given Candidate's resume and Job Description of the role he is applying for.
 
-Your objective is to determine how well the candidate matches the job description using 
-holistic reasoning, not just keyword overlap.
+# ATS SCORE (MANDATORY)
+At the very beginning of your response, output:
+ATS_SCORE: <0-100>
 
-You must analyze dynamically — do NOT limit evaluation to fixed categories.
+This ATS score must be calculated using:
+- Required skill coverage
+- Experience relevance
+- Tool matching
+- Missing required qualifications penalty
+- Preferred qualification bonus
+- Transferable skills
+- Domain alignment
 
-==================================================
-PRIMARY OBJECTIVE
-==================================================
+Missing REQUIRED skills must reduce the ATS score.
 
-Evaluate the resume against the job description using:
+# Instruction:
+- Analyze candidate's resume based on the possible points that can be extracted from job description,and give your evaluation on each point with the criteria below:  
+- Extract requirements directly from the Job Description.
+- Evaluate each requirement individually.
+- Consider all points like required skills, experience,etc that are needed for the job role.
+- Calculate the score to be given (out of 5) for every point based on evaluation at the beginning of each point with a detailed explanation.  
+- If the resume aligns with the job description point, mark it with ✅ and provide a detailed explanation.  
+- If the resume doesn't align with the job description point, mark it with ❌ and provide a reason for it.  
+- If a clear conclusion cannot be made, use a ⚠️ sign with a reason.  
+- Penalize missing required tools or skills.
+- Do NOT assume skills not mentioned in resume.
+- Use professional third-person tone.
 
-• semantic understanding
-• transferable skills reasoning
-• implied experience inference
-• role seniority alignment
-• domain expertise depth
-• industry-specific expectations
-• responsibility overlap
-• measurable achievements
-• skill maturity
-• contextual relevance
-• career progression consistency
-• specialization relevance
-• risk factors (missing critical requirements)
-• overqualification detection
-• adaptability potential
+# Inputs:
+Candidate Resume: {resume}
 
-==================================================
-ATS SCORE REQUIREMENT (CRITICAL)
-==================================================
+---
+Job Description: {job_desc}
 
-At the very top return:
-
-ATS_MATCH: <0-100>
-
-This must be computed using:
-
-• semantic similarity
-• requirement coverage
-• experience relevance
-• skill depth
-• domain alignment
-• transferable competencies
-• seniority match
-• missing critical requirements penalty
-
-This should simulate a REAL ATS system.
-
-==================================================
-ANALYSIS FORMAT
-==================================================
-
-You must:
-
-• Automatically determine evaluation dimensions
-• Create as many sections as needed
-• Score each section out of 5
-• Provide deep reasoning
-
-Use format:
-
-<Dimension Name> — Score: X/5 [emoji]
-Explanation...
-
-Emoji Rules:
-✅ Strong Match
-⚠️ Partial Match
-❌ Missing or Weak
-
-==================================================
-DEEP ANALYSIS REQUIREMENTS
-==================================================
-
-Your reasoning must:
-
-• infer implied skills
-• detect synonyms
-• consider equivalent experience
-• consider domain crossover skills
-• evaluate leadership signals
-• assess impact metrics
-• identify missing requirements
-• detect resume strengths not explicitly requested
-• identify hidden gaps
-
-==================================================
-FINAL SECTION (MANDATORY)
-==================================================
-
-Suggestions to Improve Resume:
-
-Provide:
-• missing skills
-• missing experience
-• formatting improvements
-• stronger keywords
-• role-specific improvements
-• measurable achievement suggestions
-
-==================================================
-INPUTS
-==================================================
-
-Candidate Resume:
-{resume}
-
---------------------------------------
-
-Job Description:
-{job_desc}
-
-==================================================
-OUTPUT RULES
-==================================================
-
-• Start with ATS_MATCH
-• Use dynamic evaluation sections
-• Be highly analytical
-• Be professional
-• Avoid repetition
-• Work for ANY profession
-• Provide realistic ATS percentage
+# Output:
+- Start with ATS_SCORE
+- Each any every point should be given a score (example: 3/5 ). 
+- Mention the scores and  relevant emoji at the beginning of each point and then explain the reason.
+- The Final Heading should be "Suggestions to improve your resume:" and give where and what the candidate can improve to be selected for that job role.
 """
     chat_completion = client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
@@ -241,7 +157,7 @@ def analyze_resume(resume_bytes: bytes, filename: str, job_desc: str) -> Dict[st
     # 1. Extract text from the file (handles routing for PDF, DOCX, TXT)
     resume_text = extract_file_text(resume_bytes, filename)
     
-    # 2. Generate Report (includes ATS_MATCH score from Groq)
+    # 2. Generate Report (includes ATS_SCORE from Groq)
     report = get_report(resume_text, job_desc)
     
     # 3. Extract ATS Score from Groq response

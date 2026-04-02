@@ -1,8 +1,12 @@
+import os
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from pydantic import BaseModel
 from auth import init_db, create_user, verify_user # Moved database logic to auth.py
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 # -------- INIT APP --------
 app = FastAPI()
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 @app.get("/")
 def health():
     return {"status": "running"}
@@ -52,6 +56,32 @@ def signup(data: SignupRequest):
     if create_user(data.username, data.email, data.password):
         return {"status": "success"}
     return {"status": "error", "message": "User already exists"}
+# -------- GOOGLE OAUTH ROUTE --------
+class GoogleLoginRequest(BaseModel):
+    token: str
+
+@app.post("/google-login")
+def google_login(data: GoogleLoginRequest):
+    """
+    Verifies a Google OAuth JWT token, auto-creates the user if needed,
+    and returns the username for frontend session storage.
+    """
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            data.token,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID
+        )
+        email = idinfo.get("email", "")
+        name = idinfo.get("name", email.split("@")[0])
+        username = name.replace(" ", "_")
+        # Auto-create user if not exists (password is set to a non-loginable hash)
+        create_user(username, email, "google_oauth_user")
+        return {"status": "success", "username": username}
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid Google token")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Google login failed: {str(e)}")
 # -------- ANALYZER ROUTE --------
 @app.post("/analyze")
 async def analyze_endpoint(

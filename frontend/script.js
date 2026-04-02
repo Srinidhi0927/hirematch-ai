@@ -3,12 +3,53 @@
 // -----------------------------------------------------
 let isLoginMode = true;
 const BASE_URL = "https://hirematch-ai-backend.onrender.com";
+const GOOGLE_CLIENT_ID = "356920447327-qusptd5rfotffn0ge7a0uen8eil5v8ul.apps.googleusercontent.com"; // Replace with your actual Google Client ID
+
 // Basic Session Guard
 if (window.location.pathname.includes("dashboard.html")) {
     if (localStorage.getItem("isLoggedIn") !== "true") {
         window.location.href = "index.html";
     }
 }
+
+// -----------------------------------------------------
+// GOOGLE SIGN-IN HANDLER
+// -----------------------------------------------------
+async function handleGoogleCredentialResponse(response) {
+    try {
+        const res = await fetch(`${BASE_URL}/google-login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: response.credential })
+        });
+        const data = await res.json();
+        if (data.status === "success") {
+            localStorage.setItem("isLoggedIn", "true");
+            localStorage.setItem("username", data.username);
+            window.location.href = "dashboard.html";
+        } else {
+            alert(data.detail || "Google login failed!");
+        }
+    } catch (error) {
+        console.error("Google Login Error:", error);
+        alert("Google login failed. Backend may be waking up. Please retry.");
+    }
+}
+
+// Initialize Google Sign-In button
+window.addEventListener("load", () => {
+    const googleDiv = document.getElementById("googleSignInDiv");
+    if (googleDiv && typeof google !== "undefined") {
+        google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleCredentialResponse
+        });
+        google.accounts.id.renderButton(
+            googleDiv,
+            { theme: "filled_black", size: "large", width: 280, text: "signin_with" }
+        );
+    }
+});
 window.toggleAuthMode = function() {
     const mainTitle = document.querySelector('.main-title');
     const submitBtn = document.getElementById('submitBtn');

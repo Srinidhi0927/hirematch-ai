@@ -850,3 +850,36 @@ input:focus::placeholder {
     letter-spacing: 0.5px;
     animation: slowPulseText 4s infinite alternate; /* Share native pulsing */
 }
+/* Google Sign-In Divider */
+.divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 14px 0;
+    color: #aaa;
+    font-size: 12px;
+    letter-spacing: 1px;
+    position: relative;
+    z-index: 2;
+}
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+}
+.divider span {
+    padding: 0 12px;
+    color: #555;
+    font-weight: 400;
+}
+/* Google Sign-In Button Container */
+#googleSignInDiv {
+    margin-top: 16px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+}

@@ -855,7 +855,7 @@ input:focus::placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 14px 0;
+    margin: 8px 0;
     color: #aaa;
     font-size: 12px;
     letter-spacing: 1px;
@@ -874,12 +874,19 @@ input:focus::placeholder {
     color: #555;
     font-weight: 400;
 }
-/* Google Sign-In Button Container */
-#googleSignInDiv {
-    margin-top: 16px;
-    margin-bottom: 8px;
+/* Custom Google Sign-In Button */
+.google-btn {
     display: flex;
+    align-items: center;
     justify-content: center;
-    position: relative;
-    z-index: 2;
+    gap: 10px;
+    margin-top: 8px;
+    padding: 0.65rem 1rem;
+}
+.google-icon {
+    display: flex;
+    align-items: center;
+}
+.google-btn svg {
+    background: transparent;
 }

@@ -36,18 +36,21 @@ async function handleGoogleCredentialResponse(response) {
     }
 }
 
-// Initialize Google Sign-In button
+// Initialize Google Sign-In (no renderButton — using custom button)
 window.addEventListener("load", () => {
-    const googleDiv = document.getElementById("googleSignInDiv");
-    if (googleDiv && typeof google !== "undefined") {
+    if (typeof google !== "undefined") {
         google.accounts.id.initialize({
             client_id: GOOGLE_CLIENT_ID,
             callback: handleGoogleCredentialResponse
         });
-        google.accounts.id.renderButton(
-            googleDiv,
-            { theme: "filled_black", size: "large", width: 280, text: "signin_with" }
-        );
+    }
+    const googleBtn = document.getElementById("googleLoginBtn");
+    if (googleBtn) {
+        googleBtn.addEventListener("click", () => {
+            if (typeof google !== "undefined") {
+                google.accounts.id.prompt();
+            }
+        });
     }
 });
 window.toggleAuthMode = function() {
